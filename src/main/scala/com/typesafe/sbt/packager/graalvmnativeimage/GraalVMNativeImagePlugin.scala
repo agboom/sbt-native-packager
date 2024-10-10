@@ -2,11 +2,10 @@ package com.typesafe.sbt.packager.graalvmnativeimage
 
 import java.io.ByteArrayInputStream
 
-import sbt._
-import sbt.Keys.{mainClass, name, _}
+import sbt.*
+import sbt.Keys.{mainClass, name, *}
 import com.typesafe.sbt.packager.{MappingsHelper, Stager}
-import com.typesafe.sbt.packager.Keys._
-import com.typesafe.sbt.packager.Compat._
+import com.typesafe.sbt.packager.Keys.*
 import com.typesafe.sbt.packager.archetypes.JavaAppPackaging
 import com.typesafe.sbt.packager.docker.{Cmd, DockerPlugin, Dockerfile, ExecCmd}
 import com.typesafe.sbt.packager.universal.UniversalPlugin
@@ -26,7 +25,7 @@ object GraalVMNativeImagePlugin extends AutoPlugin {
     val GraalVMNativeImage: Configuration = config("graalvm-native-image")
   }
 
-  import autoImport._
+  import autoImport.*
 
   private val GraalVMBaseImage = "ghcr.io/graalvm/graalvm-ce"
 
@@ -34,16 +33,19 @@ object GraalVMNativeImagePlugin extends AutoPlugin {
 
   override def projectConfigurations: Seq[Configuration] = Seq(GraalVMNativeImage)
 
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    target in GraalVMNativeImage := target.value / "graalvm-native-image",
+  override lazy val projectSettings: Seq[Setting[?]] = Def.settings(
+    inConfig(GraalVMNativeImage)(Def.settings(
+      scopedSettings,
+      resourceDirectory := sourceDirectory.value / "graal",
+      mainClass := (Compile / mainClass).value
+    )),
+    target := target.value / "graalvm-native-image",
     graalVMNativeImageOptions := Seq.empty,
     graalVMNativeImageGraalVersion := None,
     graalVMNativeImageCommand := (if (scala.util.Properties.isWin) "native-image.cmd" else "native-image"),
-    resourceDirectory in GraalVMNativeImage := sourceDirectory.value / "graal",
-    mainClass in GraalVMNativeImage := (mainClass in Compile).value
-  ) ++ inConfig(GraalVMNativeImage)(scopedSettings)
+  )
 
-  private lazy val scopedSettings = Seq[Setting[_]](
+  private lazy val scopedSettings = Seq[Setting[?]](
     resourceDirectories := Seq(resourceDirectory.value),
     includeFilter := "*",
     resources := resourceDirectories.value.descendantsExcept(includeFilter.value, excludeFilter.value).get,
@@ -166,15 +168,15 @@ object GraalVMNativeImagePlugin extends AutoPlugin {
   /**
     * This can be used to build a custom build image starting from a custom base image. Can be used like so:
     *
-    * ```
+    * {{{
     * (containerBuildImage in GraalVMNativeImage) := generateContainerBuildImage("my-docker-hub-username/my-graalvm").value
-    * ```
+    * }}}
     *
     * The passed in docker image must have GraalVM installed and on the PATH, including the gu utility.
     */
   def generateContainerBuildImage(baseImage: String): Def.Initialize[Task[Option[String]]] =
     Def.task {
-      val dockerCommand = (DockerPlugin.autoImport.dockerExecCommand in GraalVMNativeImage).value
+      val dockerCommand = (GraalVMNativeImage / DockerPlugin.autoImport.dockerExecCommand).value
       val streams = Keys.streams.value
 
       val (baseName, tag) = baseImage.split(":", 2) match {
@@ -183,7 +185,7 @@ object GraalVMNativeImagePlugin extends AutoPlugin {
       }
 
       val imageName = s"${baseName.replace('/', '-')}-native-image:$tag"
-      import sys.process._
+      import sys.process.*
       if ((dockerCommand ++ Seq("image", "ls", imageName, "--quiet")).!!.trim.isEmpty) {
         streams.log.info(s"Generating new GraalVM native-image image based on $baseImage: $imageName")
 

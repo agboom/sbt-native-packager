@@ -1,10 +1,10 @@
 package com.typesafe.sbt
 
-import packager._
-import debian.DebianPlugin.autoImport.genChanges
+import com.typesafe.sbt.packager.*
 import com.typesafe.sbt.packager.Keys.{packageXzTarball, packageZipTarball, validatePackage, validatePackageValidators}
+import com.typesafe.sbt.packager.debian.DebianPlugin.autoImport.genChanges
 import com.typesafe.sbt.packager.validation.Validation
-import sbt._
+import sbt.*
 import sbt.Keys.{name, normalizedName, packageBin, streams}
 
 /**
@@ -68,26 +68,26 @@ object SbtNativePackager extends AutoPlugin {
     */
   object autoImport extends packager.NativePackagerKeys {
 
-    val NativePackagerKeys = packager.Keys
-    val NativePackagerHelper = packager.MappingsHelper
+    private val NativePackagerKeys = packager.Keys
+    private val NativePackagerHelper = packager.MappingsHelper
 
-    import SettingsHelper._
+    import SettingsHelper.*
 
     @deprecated("Use enablePlugins(xxxDeployPlugin)", "1.x")
-    def deploymentSettings =
-      makeDeploymentSettings(Debian, packageBin in Debian, "deb") ++
-        makeDeploymentSettings(Rpm, packageBin in Rpm, "rpm") ++
-        makeDeploymentSettings(Windows, packageBin in Windows, "msi") ++
-        makeDeploymentSettings(Universal, packageBin in Universal, "zip") ++
-        addPackage(Universal, packageZipTarball in Universal, "tgz") ++
-        makeDeploymentSettings(UniversalDocs, packageBin in UniversalDocs, "zip") ++
-        addPackage(UniversalDocs, packageXzTarball in UniversalDocs, "txz") ++
-        makeDeploymentSettings(Debian, genChanges in Debian, "changes")
+    def deploymentSettings: Seq[Setting[?]] =
+      makeDeploymentSettings(Debian, Debian / packageBin, "deb") ++
+        makeDeploymentSettings(Rpm, Rpm / packageBin, "rpm") ++
+        makeDeploymentSettings(Windows, Windows / packageBin, "msi") ++
+        makeDeploymentSettings(Universal, Universal / packageBin, "zip") ++
+        addPackage(Universal, Universal / packageZipTarball, "tgz") ++
+        makeDeploymentSettings(UniversalDocs, UniversalDocs / packageBin, "zip") ++
+        addPackage(UniversalDocs, UniversalDocs / packageXzTarball, "txz") ++
+        makeDeploymentSettings(Debian, Debian / genChanges, "changes")
   }
 
-  import autoImport._
+  import autoImport.*
 
-  override lazy val projectSettings = Seq(
+  override lazy val projectSettings: Seq[Setting[?]] = Def.settings(
     // Bad defaults that let us at least not explode users who don't care about native packagers
     maintainer := "",
     packageDescription := name.value,
@@ -110,7 +110,7 @@ object SbtNativePackager extends AutoPlugin {
       * }}}
       */
     @deprecated("Use enablePlugins(JavaAppPackaging)", "1.x")
-    def java_application: Seq[Setting[_]] =
+    def java_application: Seq[Setting[?]] =
       projectSettings ++
         universal.UniversalPlugin.projectSettings ++
         linux.LinuxPlugin.projectSettings ++
@@ -126,7 +126,7 @@ object SbtNativePackager extends AutoPlugin {
       * }}}
       */
     @deprecated("Use enablePlugins(JavaServerAppPackaging)", "1.x")
-    def java_server: Seq[Setting[_]] =
+    def java_server: Seq[Setting[?]] =
       java_application ++ archetypes.JavaServerAppPackaging.projectSettings
   }
 

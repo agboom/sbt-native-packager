@@ -1,11 +1,12 @@
 package com.typesafe.sbt.packager.debian
 
 import com.typesafe.sbt.SbtNativePackager.Debian
-import com.typesafe.sbt.packager.Keys._
+import com.typesafe.sbt.packager.Keys.*
 import com.typesafe.sbt.packager.linux.LinuxFileMetaData
-import com.typesafe.sbt.packager.Compat._
-import sbt.Keys._
-import sbt._
+import sbt.*
+import sbt.Keys.*
+
+import scala.compat.Platform.EOL
 
 /**
   * ==Native Packaging==
@@ -32,7 +33,7 @@ trait DebianNativePackaging extends DebianPluginLike {
   /**
     * Using the native installed dpkg-build tools to build the debian package.
     */
-  private[debian] def debianNativeSettings: Seq[Setting[_]] =
+  private[debian] def debianNativeSettings: Seq[Setting[?]] =
     inConfig(Debian)(
       Seq(
         debianNativeBuildOptions += "-Znone", // packages are largely JARs, which are already compressed
@@ -90,7 +91,7 @@ trait DebianNativePackaging extends DebianPluginLike {
           IO.writeLines(changesFile, allChanges)
         } catch {
           case e: Exception =>
-            sys.error("Failure generating changes file." + e.getStackTraceString)
+            sys.error("Failure generating changes file." + e.getStackTrace.mkString("", EOL, EOL))
         }
         changesFile
     }

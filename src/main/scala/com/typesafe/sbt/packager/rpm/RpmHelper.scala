@@ -8,7 +8,7 @@ object RpmHelper {
 
   /** Returns the host vendor for an rpm. */
   def hostVendor =
-    sys.process.Process(Seq("rpm", "-E", "%{_host_vendor}")) !!
+    sys.process.Process(Seq("rpm", "-E", "%{_host_vendor}")).!!
 
   /**
     * Prepares the staging directory for the rpm build command.

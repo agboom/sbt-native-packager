@@ -2,13 +2,14 @@ package com.typesafe.sbt
 package packager
 package universal
 
-import sbt._
+import sbt.*
+import Compat.CompatFile
 
 trait UniversalKeys {
   val packageZipTarball =
-    TaskKey[File]("package-zip-tarball", "Creates a tgz package.")
+    TaskKey[CompatFile]("package-zip-tarball", "Creates a tgz package.")
   val packageXzTarball =
-    TaskKey[File]("package-xz-tarball", "Creates a txz package.")
+    TaskKey[CompatFile]("package-xz-tarball", "Creates a txz package.")
   val packageOsxDmg = TaskKey[File]("package-osx-dmg", "Creates a dmg package for macOS (only on macOS).")
   val stage = TaskKey[File](
     "stage",

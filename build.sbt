@@ -3,12 +3,18 @@ organization := "com.github.sbt"
 homepage := Some(url("https://github.com/sbt/sbt-native-packager"))
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
-Global / scalaVersion := "2.12.20"
+Global / scalaVersion := "3.3.4"
 
-// crossBuildingSettings
-crossSbtVersions := Vector("1.1.6")
+crossScalaVersions := Seq("2.12.20", "3.3.4")
 
-Compile / scalacOptions ++= Seq("-deprecation")
+(pluginCrossBuild / sbtVersion) := {
+  scalaBinaryVersion.value match {
+    case "2.12" => "1.1.6"
+    case _      => "2.0.0-M2"
+  }
+}
+
+Compile / scalacOptions ++= Seq("-deprecation", "-rewrite", "-source", "3.0-migration")
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 
 // put jdeb on the classpath for scripted tests
@@ -37,7 +43,7 @@ libraryDependencies ++= {
 // scala version depended libraries
 libraryDependencies ++= {
   scalaBinaryVersion.value match {
-    case "2.10" => Nil
+    case "2.10" | "3" => Nil
     case _ =>
       Seq(
         // Do NOT upgrade these dependencies to 2.x or newer! sbt-native-packager is a sbt-plugin

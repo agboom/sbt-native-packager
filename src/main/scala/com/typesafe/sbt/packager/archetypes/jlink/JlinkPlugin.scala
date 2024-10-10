@@ -3,12 +3,11 @@ package jlink
 
 import scala.collection.immutable
 import scala.sys.process.{BasicIO, Process, ProcessBuilder}
-import sbt._
-import sbt.Keys._
+import sbt.*
+import sbt.Keys.*
 import com.typesafe.sbt.SbtNativePackager.{Debian, Universal}
 import com.typesafe.sbt.packager.Keys.{bundledJvmLocation, packageName}
-import com.typesafe.sbt.packager.Compat._
-import com.typesafe.sbt.packager.archetypes.jlink._
+import com.typesafe.sbt.packager.archetypes.jlink.*
 import com.typesafe.sbt.packager.archetypes.scripts.BashStartScriptKeys
 import com.typesafe.sbt.packager.universal.UniversalPlugin
 import java.io.File
@@ -36,11 +35,11 @@ object JlinkPlugin extends AutoPlugin {
     val JlinkIgnore: Ignore.type = JlinkPlugin.Ignore
   }
 
-  import autoImport._
+  import autoImport.*
 
   override def requires: Plugins = JavaAppPackaging
 
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+  override lazy val projectSettings: Seq[Setting[?]] = Def.settings(
     jlinkBuildImage / target := target.value / "jlink" / "output",
     jlinkBundledJvmLocation := "jre",
     bundledJvmLocation := Some(jlinkBundledJvmLocation.value),

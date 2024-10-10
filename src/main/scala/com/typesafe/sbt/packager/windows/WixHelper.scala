@@ -2,8 +2,7 @@ package com.typesafe.sbt
 package packager
 package windows
 
-import Keys._
-import sbt._
+import sbt.*
 
 import collection.mutable.ArrayBuffer
 import scala.collection.mutable
@@ -84,7 +83,7 @@ object WixHelper {
     val filenamesPrep =
       for {
         f <- features
-        ComponentFile(name, _) <- f.components
+        case ComponentFile(name, _) <- f.components
       } yield allParentDirs(file(name))
     val filenames = filenamesPrep.flatten.map(_.toString.replaceAll("\\\\", "/")).filter(_ != "")
     // Now for directories...
@@ -96,11 +95,12 @@ object WixHelper {
         else filename lastIndexOf '\\'
       filename drop (lastSlash + 1)
     }
-    val dirs = (filenames map parentDir).distinct;
+    val dirs = (filenames map parentDir).distinct
     // Now we need our directory tree xml?
-    val dirToChildren = dirs groupBy parentDir;
+    val dirToChildren = dirs groupBy parentDir
+
     def dirXml(currentDir: String): scala.xml.Node =
-      if (!currentDir.isEmpty) {
+      if (currentDir.nonEmpty) {
         val children = dirToChildren.getOrElse(currentDir, Seq.empty)
         <Directory Id={cleanStringForId(currentDir)} Name={simpleName(currentDir)}>
         {
@@ -113,7 +113,7 @@ object WixHelper {
     case class ComponentInfo(id: String, xml: scala.xml.Node)
     def makeComponentInfo(c: FeatureComponent): ComponentInfo =
       c match {
-        case w: WindowsFeature =>
+        case _: WindowsFeature =>
           sys.error("Nested windows features currently unsupported!")
         case AddDirectoryToPath(dir) =>
           val dirRef = if (dir.isEmpty) "INSTALLDIR" else cleanStringForId(dir)
@@ -158,8 +158,8 @@ object WixHelper {
         // rather than forcing it to be something.
         // Also, we need some mechanism to ensure the start menu folder is removed in the event
         // that we remove all menu items.
-        case AddShortCuts(targets, workingDir) =>
-          val targetSize = targets.size.toString.size
+        case AddShortCuts(targets, _) =>
+          val targetSize = targets.size.toString.length
           val id =
             cleanStringWithPostfix(
               "shortcut_" + makeGUID(targets.mkString),
@@ -174,7 +174,7 @@ object WixHelper {
                 val name = simpleName(target)
                 val desc = "Edit configuration file: " + name
                 val cleanName = name.replaceAll("[\\.-\\\\//]+", "_")
-                <Shortcut Id={id + "_SC" + (s"%0${targetSize}d").format(i + 1)} Name={cleanName} Description={
+                <Shortcut Id={id + "_SC" + s"%0${targetSize}d".format(i + 1)} Name={cleanName} Description={
                   desc
                 } Target={"[INSTALLDIR]\\" + target.replaceAll("\\/", "\\\\")} WorkingDirectory="INSTALLDIR"/>
               }
@@ -186,12 +186,12 @@ object WixHelper {
       }
 
     val componentMap = mutable.LinkedHashMap[String, Seq[ComponentInfo]]()
-    (for (f <- features) {
+    for (f <- features) {
       // TODO - we need to support more than "Component File".
       val componentInfos =
         f.components map makeComponentInfo
       componentMap(f.id) = componentInfos
-    })
+    }
 
     val removeId =
       cleanStringWithPostfix("ApplicationProgramsFolderRemove", 67, "")
@@ -215,8 +215,8 @@ object WixHelper {
       <!-- Now define the components -->
       {
       for {
-        (fid, components) <- componentMap
-        ComponentInfo(cid, xml) <- components
+        (_, components) <- componentMap
+        ComponentInfo(_, xml) <- components
       } yield xml
     }
       <!-- Now define the features! -->
@@ -291,7 +291,7 @@ object WixHelper {
     * characters and replacing with _.  Also limits the width to 70 (rather than
     * 72) so we can safely add a few later.
     */
-  def cleanStringForId(n: String) = {
+  def cleanStringForId(n: String): String = {
     val x = n.replaceAll("[^0-9a-zA-Z_]", "_").takeRight(59) + (math.abs(n.hashCode).toString + "xxxxxxxxx")
       .substring(0, 9)
     if (x startsWith "_") x
@@ -305,7 +305,7 @@ object WixHelper {
   }
 
   /** Cleans a file name for the Wix pre-processor.  Every $ should be doubled. */
-  def cleanFileName(n: String) =
+  def cleanFileName(n: String): String =
     n.replaceAll("\\$", "\\$\\$").replaceAll("\\/", "\\\\")
 
   /** Takes a file and generates an ID for it. */
@@ -322,22 +322,19 @@ object WixHelper {
   // reference: https://github.com/sbt/sbt-native-packager/issues/726
   def generateComponentsAndDirectoryXml(dir: File, id_prefix: String = ""): (Seq[String], scala.xml.Node) = {
     def makeId(f: File) =
-      cleanStringForId(IO.relativize(dir, f) map (id_prefix +) getOrElse (id_prefix + f.getName))
+      cleanStringForId(IO.relativize(dir, f) map id_prefix.+ getOrElse (id_prefix + f.getName))
     def handleFile(f: File): (Seq[String], scala.xml.Node) = {
       val id = makeId(f)
-      val xml = (
-        <Component Id={id} Guid='*'>
+      val xml = <Component Id={id} Guid='*'>
           <File Id={cleanStringForId(id + "_file")} Name={cleanFileName(f.getName)} DiskId='1' Source={
           cleanFileName(f.getAbsolutePath)
         }/>
         </Component>
-      )
       (Seq(id), xml)
     }
     def handleDirectory(dir: File): (Seq[String], scala.xml.Node) = {
       val buf: ArrayBuffer[String] = ArrayBuffer.empty
-      val xml = (
-        <Directory Id={makeId(dir)} Name={dir.getName}>
+      val xml = <Directory Id={makeId(dir)} Name={dir.getName}>
           {
           for {
             file <- IO.listFiles(dir)
@@ -348,8 +345,7 @@ object WixHelper {
           }
         }
         </Directory>
-      )
-      (buf.toSeq, xml)
+      (buf, xml)
     }
     def recursiveHelper(f: File): (Seq[String], scala.xml.Node) =
       if (f.isDirectory) handleDirectory(f)

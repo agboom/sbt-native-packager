@@ -2,7 +2,8 @@ package com.typesafe.sbt
 package packager
 package debian
 
-import sbt._
+import Compat.*
+import sbt.*
 import linux.LinuxPackageMapping
 
 /** DEB packaging specifc build targets. */
@@ -46,7 +47,7 @@ trait DebianKeys {
   val debianSign = TaskKey[File]("debian-sign", "runs the dpkg-sig command to sign the generated deb file.")
   val debianSignRole =
     SettingKey[String]("debian-sign-role", "The role to use when signing a debian file (defaults to 'builder').")
-  val genChanges = TaskKey[File]("gen-changes", "runs the dpkg-genchanges command to generate the .changes file.")
+  val genChanges = TaskKey[CompatFile]("gen-changes", "runs the dpkg-genchanges command to generate the .changes file.")
 
   // Debian control scripts
   val debianControlScriptsDirectory = SettingKey[File](
